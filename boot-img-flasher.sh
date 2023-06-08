@@ -7,16 +7,16 @@ if [ "$(id -u)" != "0" ]; then
   exit 1
 fi
 
-# Print a header Message !
-echo  "########################################"
-echo  "#  Boot Image Flasher for A/B devices  #"
-echo  "#           Made by Abhijeet           #"
-echo  "########################################"
-echo " "
+# Print a header message
+echo "########################################"
+echo "#  Boot Image Flasher for A/B devices  #"
+echo "#           Made by Abhijeet           #"
+echo "########################################"
+echo ""
 echo "Finding both boot slot's partition location.."
 
 # Find the path to the by-name directory
-by_name_path=$(find /dev/block/platform -type d -name by-name)
+by_name_path=$(find /dev/block/platform -type d -name by-name) > /dev/null 2>&1
 
 # Check if the directory was found
 if [ -z "$by_name_path" ]; then
@@ -38,7 +38,7 @@ if [ ! -e "$boot_a" ] || [ ! -e "$boot_b" ]; then
   echo ""
   echo "Error: boot_a and boot_b partition location not found"
   echo ""
-  echo "Reason: boot_a or boot_b symbolic links doesn't exist in your by-name directory"
+  echo "Reason: boot_a or boot_b symbolic links don't exist in your by-name directory"
   exit 1
 fi
 
@@ -55,43 +55,27 @@ if [ -z "$boot_a_symlink" ] || [ -z "$boot_b_symlink" ]; then
   exit 1
 fi
 
-# Define a function to set the read-write permission on block device Directory's 
+# Define a function to set the read-write permission on block device directories
 set_read_write() {
-for PATHS in $DIR; do
-  blockdev --setrw $DIR
-done
+  for DIR in "$@"; do
+    blockdev --setrw "$DIR"
+  done
 }
-# Define another function to set read write certain directory
-# By calling the  set_read_write function and Also remount /system,/vendor,/system_ext,/system_root as rw
+
+# Define a function to remount certain directories as read-write using previous function
 remount_rw() {
-DIR=/dev/block
-set_read_write
-DIR=/dev/block/bootdevice/by-name
-set_read_write
-DIR=$(find /dev/block/platform -type d -name by-name)
-set_read_write
-mount -o rw,remount $MAGISKTMP/mirror/system
-mount -o rw,remount $MAGISKTMP/mirror/system_root
-mount -o rw,remount $MAGISKTMP/mirror/system_ext
-mount -o rw,remount $MAGISKTMP/mirror/vendor
-mount -o rw,remount /system
-mount -o rw,remount /
-mount -o rw,remount /system_root
-mount -o rw,remount /system_ext
-mount -o rw,remount /vendor
+  DIR="/dev/block"
+  set_read_write "$DIR"
+  DIR="/dev/block/bootdevice/by-name"
+  set_read_write "$DIR"
+  DIR=$(find /dev/block/platform -type d -name by-name)
+  set_read_write "$DIR"
 }
+remount_rw
 
-# set a function for boot partition as well
-for_boot() {
-  # Set boot_a partition to read-write
-  blockdev --setrw  $boot_a_symlink
-
-  # Set boot_b partition to read-write
-  blockdev --setrw  $boot_b_symlink
-}
-
-# call the function
-for_boot
+# Set the boot_a and boot_b partitions to read-write
+blockdev --setrw "$boot_a_symlink"
+blockdev --setrw "$boot_b_symlink"
 
 sleep 5
 echo ""
@@ -103,7 +87,7 @@ echo "The location of the boot_b Partition is: $boot_b_symlink"
 # Define the path to the boot image that will be flashed to the boot partitions
 boot_image="/storage/emulated/0/Download/boot.img"
 
-# check if the boot image exist in the specified directory 
+# Check if the boot image exists in the specified directory
 if [ ! -f "$boot_image" ]; then
   echo ""
   echo "Error: boot image file not found!"
@@ -112,7 +96,7 @@ if [ ! -f "$boot_image" ]; then
   exit 1
 fi
 
-# Flash the boot image to the boot_a and boot_b slot
+# Flash the boot image to the boot_a and boot_b partitions
 echo ""
 echo "Flashing boot image to $boot_a_symlink..."
 
@@ -121,7 +105,6 @@ dd if="$boot_image" of="$boot_a_symlink"
 sleep 0.5
 
 echo ""
-
 echo "Flashing boot image to $boot_b_symlink..."
 
 dd if="$boot_image" of="$boot_b_symlink"
