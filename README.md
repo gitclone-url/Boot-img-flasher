@@ -26,7 +26,7 @@ There are two primary methods to use the Boot Image Flasher:
 3. Run the script with this command:
 
 ```bash
-curl -s https://raw.githubusercontent.com/gitclone-url/Boot-img-flasher/Master/boot-img-flasher.sh -o boot-img-flasher.sh && (which sudo &>/dev/null) || pkg install -y tsu 2>/dev/null && sudo bash boot-img-flasher.sh
+curl -s https://raw.githubusercontent.com/gitclone-url/Boot-img-flasher/Master/boot-img-flasher.sh -o boot-img-flasher.sh && { command -v tput figlet &>/dev/null || pkg install -y figlet ncurses-utils; } && { which sudo &>/dev/null || pkg install -y tsu; }; clear; sudo bash boot-img-flasher.sh
 ```
 
 4. After the script finishes, restart your device.
