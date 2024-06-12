@@ -1,68 +1,74 @@
-## Boot Image Flasher
+<div align="center">
+ <img src="https://github.com/gitclone-url/Boot-img-flasher/assets/98699436/05dd92bf-7d11-4380-b21a-21558b78196e" />
+<a href="https://github.com/gitclone-url/Boot-img-flasher">
+  <h2>Boot Image Flasher</h2>
+</a>
+</div>
 
-Boot Image Flasher is a shell script developed to streamline the flashing of boot images on Android devices equipped with A/B slot partitioning. This tool simplifies the flashing process for users by removing the relying on custom recovery or fastboot, offering a more direct and less time-intensive approach. 
+### Detailed Explanation
 
-### Purpose
+**What is Boot Image Flasher?**
 
-The creation of this script was motivated by the lack of custom recovery support on numerous devices, which traditionally compels the use of fastboot for image flashing.
+Boot Image Flasher is a shell script developed to simplyfy the process of flashing boot images on Android devices, supporting both A/B and legacy (non-A/B) devices. Typically, for flashing boot images on devices we use custom recovery or fastboot, which can be complex and time-consuming. This script removes the need for those methods, offering a more straightforward, efficient and user-friendly solution.
 
-Furthermore, devices equipped with Unisoc CPUs operating on Android 10 or higher are integrated with vbmeta-sign. This necessitates the signing of boot images with private keys subsequent to Magisk patching to avert boot loops.
+### Key Features
 
-The process involving new Magisk updates requires patching the boot.img using the latest Magisk app, followed by signing with private keys, and finally flashing via fastboot. This script was devised to streamline this process by enabling the flashing of the boot image to both A/B slots without the use of custom recovery or fastboot, thereby saving considerable time and simplifying the procedure for all devices.
+- **Automated and User-Friendly:** Simplifies the boot image flashing process with minimal user intervention.
+- **Broad Device Support:** Compatible with any android devices, including with both A/B and legacy (non-A/B) partition styles.
+- **Saves Time and Effort:** Reduces the time and complexity involved in flashing boot images in fastboot or custom recoveries, making it accessible for users with varying levels of technical expertise.
+- **Flexible Usage:** Can be used via termux or can be flashed as a Magisk module, providing flexibility based on user preferences.
 
-### Requirements
+### Prerequisites
 
-- An Android device with dual boot slots
-- Root access on the device
+- An Android device with root access.
+- To use in Termux, `figlet` and `ncurses-utils` need to be installed if not already available.
 
 ### Usage
 
-There are two primary methods to use the Boot Image Flasher:
+#### Method 1: Via Termux
 
-**Method 1: Via Terminal Emulator**
-
-1. Open a terminal emulator (like Termux) on your Android device.
-2. Change to the directory where the 'boot.img' file is located.
-3. Run the script with this command:
+1. Open [Termux](https://github.com/termux/termux-app) on your Android device.
+2. Navigate to the directory where the **only** boot img file is located.
+3. Copy paste the command's below and hit enter to start running script.
 
 ```bash
 curl -s https://raw.githubusercontent.com/gitclone-url/Boot-img-flasher/Master/boot-img-flasher.sh -o boot-img-flasher.sh && { command -v tput figlet &>/dev/null || pkg install -y figlet ncurses-utils; } && { which sudo &>/dev/null || pkg install -y tsu; }; clear; sudo bash boot-img-flasher.sh
 ```
 
-4. After the script finishes, restart your device.
+4. Restart your device after the flashing process is done.
 
-**Method 2: Magisk**
+#### Method 2: Magisk
 
-1. Download `boot_flash.zip` from [here](https://github.com/gitclone-url/Boot-img-flasher/raw/Master/boot_flash.zip).
-2. Extract the contents and insert your 'boot.img'.
-3. Repack the zip file.
-4. Install the zip as a Magisk module.
-5. Restart your device.
+1. Download `boot_flasher.zip` from [here](https://github.com/gitclone-url/Boot-img-flasher/raw/Master/boot_flash.zip).
+2. Extract the archive using an app like [ZArchiver](https://play.google.com/store/apps/details?id=ru.zdevs.zarchiver).
+3. After extracting, copy and paste your `boot.img` inside the created folder.
+4. Select all files inside the folder and archive them as a zip.
+5. Install the zip as a Magisk module.
+6. Restart your device.
 
-#### Important Information
+### Additional information
 
-For users of Generic System Images (GSIs) with prebuilt root access, the Magisk app can be utilized to patch the boot image. Subsequently, the patched image can be flashed using this script, with root permissions granted through the PHH Superuser App.
+Some GSI (Generic System Image) based on phh comes with prebuilt root access, meaning the `su` binary is already included in the system!
 
-**Note 1:** The Magisk app is only required for patching the boot image.
+If you are using one of these GSIs and your phone is not rooted with Magisk or other root providers, in the case you can patch boot image of your phone. Then you can flash the patched boot image using this script, with root permissions granted through the PHH Superuser App.
+This way you can easily root using magisk or other rooting apps just by using your device no need for additional tools PC or hassles.
 
-**Note 2:** Devices with a Unisoc CPU running Android 10 or higher must initially flash a custom signed `vbmeta-sign.img` and after patching process with Magisk, the boot image necessitates signing with private keys before flashing.
+> **Note:** for patching the boot image you can use both [Magisk](https://github.com/topjohnwu/Magisk) or [APatch](https://github.com/bmax121/APatch) app.
 
-For comprehensive instructions on signing Unisoc images with private keys, please refer to this [Guide](https://www.hovatek.com/forum/thread-32674.html).
+For information about Gsi, check the [FAQ](https://github.com/phhusson/treble_experimentations/wiki/Frequently-Asked-Questions-%28FAQ%29) and then you can choose your specific GSI image from [here](https://github.com/phhusson/treble_experimentations/wiki/Generic-System-Image-%28GSI%29-list).
 
-For those seeking GSI with prebuilt root access, please review the [Frequently Asked Questions (FAQ)](https://github.com/phhusson/treble_experimentations/wiki/Frequently-Asked-Questions-%28FAQ%29) for insights into GSI basics and the various naming conventions used by GSI builders and maintainers than choose your GSI from [here](https://github.com/phhusson/treble_experimentations/wiki/Generic-System-Image-%28GSI%29-list)
+### Disclaimer
 
-## Disclaimer
-
-**Caution:** This script is intended for advanced users well-versed in the risks associated with flashing boot images. Incorrect usage may lead to device bricking or data loss. Proceed at your own risk.
+This script is intended for advanced users only. Improper use of this script can lead to device bricking, data loss, or other serious issues. The author will be not responsible for any damage or data loss resulting from the misuse of this script. Proceed at your own risk & with caution and follow the instructions carefully.
 
 ### License
 
-The Boot Image Flasher script is licensed under the [GNU General Public License v2.0](LICENSE).
+Boot Image Flasher is distributed under the terms of the [GNU General Public License v2.0](LICENSE).
 
 ### Contributing
 
-Contributions are welcome! To contribute, kindly submit a pull request.
+Contributions are welcome. Please fork the repository, make your modifications, and submit a pull request.
 
 ### Contact
 
-For support, inquiries, or suggestions, feel free to reach out to the author via [Telegram](https://t.me/PhantomXPain).
+For support, inquiries, or suggestions, contact the author via [Telegram](https://t.me/PhantomXPain).
