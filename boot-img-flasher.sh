@@ -1,6 +1,42 @@
 #!/system/bin/sh
 
+#############################################################################################
+#                                ::  Boot Image Flasher ::
+#############################################################################################
+#
+#══════════════════════════════════════════════════════════════════════════
+# Usage:
+#   boot_img_flasher.sh [<boot_image>]
+#
+# Arguments:
+#   <boot_image>  Optional: Path to the boot image file.
+#                 If not provided, script will search in the current directory
+#
+#══════════════════════════════════════════════════════════════════════════
+# Features:
+#   * Automated Flashing: Simplifies boot image flashing with minimal user intervention
+#   * Universal Compatibility: Supports A/B and legacy partition styles devices 
+#   * Flexible Usage: Works in Termux or can be flashed as a Magisk module
+#   * User-Friendly: Accessible for users with varying levels of technical expertise.
+#   * Time-Saving: Streamlines the process compared to fastboot or custom recoveries
+#
+#══════════════════════════════════════════════════════════════════════════
+# File Structure:
+#   boot_img_flasher.sh   Main script file
+#   *.img                 Boot image to be flashed (if not provided as argument)
+#
+#══════════════════════════════════════════════════════════════════════════
+# Author: Abhijeet
+# Source: @gitclone-url/Boot-img-flasher
+#
+#############################################################################################
+
 umask 022
+
+# Determine execution environment by checking for Termux-specific environment variable.
+# If absent, assume Magisk environment and enable debug tracing
+
+[ -n "$TERMUX_VERSION" ] || [ -n "$PREFIX" ] || { export DEBUG=true; set -o xtrace; }
 
 # Global Variables
 GREEN="\033[1;92m"
@@ -9,12 +45,6 @@ ERR="\033[0;31m"
 NC="\033[0m"
 OUTFD=$2
 ZIPFILE=$3
-
-supports_color() {
-    [ -t 1 ] && command -v tput > /dev/null && tput colors > /dev/null
-}
-
-if ! supports_color; then GREEN= BLUE= ERR= NC=; fi
 
 print_banner() {
     local banner_text='Boot img Flasher'
@@ -31,37 +61,37 @@ print_banner() {
         printf "%*s%b%*s\n" $padding_width "" "$text" $padding_width "" && echo
      }
 
-        # Check if 'figlet' is available. If it is so, assume that script likely running in Termux
-	# or a similar environment. And in this case use 'figlet' to display our ASCII art banner.
-	# With the addition of '-c' and '-t' option, to ensure proper alignment.
-	if command -v figlet > /dev/null; then
+    # Check if 'figlet' is available. If it is so, assume that script likely running in Termux
+    # or a similar environment. And in this case use 'figlet' to display our ASCII art banner.
+    # With the addition of '-c' and '-t' option, to ensure proper alignment.
+    if command -v figlet > /dev/null; then
         figlet -ct "$banner_text"
-            center_text "${BLUE}$description${NC}"
-            center_text "${GREEN}$author${NC}"
-            center_text "\033[3mGit Source: $git_source${NC}"
-        else
-            # Fallback to default ASCII banner for magisk!
-            echo    "   _____                                                     _____"
-            echo    "  ( ___ )                                                   ( ___ )"
-            echo    "   |   |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|   |"
-            echo    "   |   |    ____                 _     _                     |   |"
-            echo    "   |   |   | __ )   ___    ___  | |_  (_) _ __ ___    __ _   |   |" 
-            echo    "   |   |   |  _ \  / _ \  / _ \ | __| | || '_   _ \  / _  |  |   |" 
-            echo    "   |   |   | |_) || (_) || (_) || |_  | || | | | | || (_| |  |   |" 
-            echo    "   |   |   |____/  \___/  \___/  \__| |_||_| |_| |_| \__, |  |   |" 
-            echo    "   |   |    _____  _              _                  |___/   |   |"
-            echo    "   |   |   |  ___|| |  __ _  ___ | |__    ___  _ __          |   |"
-            echo    "   |   |   | |_   | | / _  |/ __|| '_ \  / _ \| '__|         |   |"
-            echo    "   |   |   |  _|  | || (_| |\__ \| | | ||  __/| |            |   |"
-            echo    "   |   |   |_|    |_| \__,_||___/|_| |_| \___||_|            |   |"
-            echo    "   |   |                                                     |   |"
-            echo    "   |___|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|___|"
-            echo    "  (_____)                                                   (_____)"
-              echo -e "\n"
-              echo -e "  $description\n"
-              echo -e "  $author\n"
-              echo -e "  Git Source: $git_source\n"
-      fi
+        center_text "${BLUE}$description${NC}"
+        center_text "${GREEN}$author${NC}"
+        center_text "\033[3mGit Source: $git_source${NC}"
+    else
+        # Fallback to default ASCII banner for magisk!
+        echo    "   _____                                                     _____"
+        echo    "  ( ___ )                                                   ( ___ )"
+        echo    "   |   |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|   |"
+        echo    "   |   |    ____                 _     _                     |   |"
+        echo    "   |   |   | __ )   ___    ___  | |_  (_) _ __ ___    __ _   |   |" 
+        echo    "   |   |   |  _ \  / _ \  / _ \ | __| | || '_   _ \  / _  |  |   |" 
+        echo    "   |   |   | |_) || (_) || (_) || |_  | || | | | | || (_| |  |   |" 
+        echo    "   |   |   |____/  \___/  \___/  \__| |_||_| |_| |_| \__, |  |   |" 
+        echo    "   |   |    _____  _              _                  |___/   |   |"
+        echo    "   |   |   |  ___|| |  __ _  ___ | |__    ___  _ __          |   |"
+        echo    "   |   |   | |_   | | / _  |/ __|| '_ \  / _ \| '__|         |   |"
+        echo    "   |   |   |  _|  | || (_| |\__ \| | | ||  __/| |            |   |"
+        echo    "   |   |   |_|    |_| \__,_||___/|_| |_| \___||_|            |   |"
+        echo    "   |   |                                                     |   |"
+        echo    "   |___|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|___|"
+        echo    "  (_____)                                                   (_____)"
+        echo -e "\n"
+        echo -e "  $description\n"
+        echo -e "  $author\n"
+        echo -e "  Git Source: $git_source\n"
+    fi
 }
 
 require_new_magisk() {
@@ -90,17 +120,39 @@ grep_prop() {
   cat $FILES 2>/dev/null | dos2unix | sed -n "$REGEX" | head -n 1
 }
 
+# function exit_with_error()
+#
+# Prints an error message and terminates script with the specified status code.
+#
+# Parameters:
+#   $1 - Error message to print.
+#   $2 - (Optional) Exit status code. Defaults to 1 if not provided.
+#
+# Example:
+#   exit_with_error "File not found" 2
+
 exit_with_error() {
-    echo -e "\n${ERR}Error: ${NC}$1"
-    exit 1
+    local message="$1"
+    local status="${2:-1}"  
+    
+    echo -e "\n${ERR}Error: ${NC}$message"
+    exit "$status"
+}
+
+
+supports_color() {
+    [ -t 1 ] && command -v tput > /dev/null && tput colors > /dev/null
 }
 
 find_boot_image() {
     local boot_image
     
-    if [ -n "$PREFIX" ]; then
-        # We are definitely in termux environment
-        boot_image=$(find "$PWD" -maxdepth 1 -name '*.img' -type f -print -quit)
+    if [ "$DEBUG" != "true" ]; then
+        if [ -n "$1" ] && [ -f "$1" ]; then
+            [[ "$1" == *.img ]] && boot_image=$1 || return 1
+        else
+            boot_image=$(find "$PWD" -maxdepth 1 -name '*.img' -type f -print -quit) || return 2
+        fi
     else
         [ -f /data/adb/magisk/util_functions.sh ] || require_new_magisk
         . /data/adb/magisk/util_functions.sh
@@ -110,7 +162,7 @@ find_boot_image() {
         chcon u:object_r:system_file:s0 $TMPDIR
         cd $TMPDIR
         # Extract any .img file from ZIP file
-        unzip -o "$ZIPFILE" '*.img' -d $TMPDIR >&2 || exit_with_error "Unable to extract boot image"
+        unzip -o "$ZIPFILE" '*.img' -d $TMPDIR >&2 || return 3
         boot_image=$(find "$TMPDIR" -maxdepth 1 -name '*.img' -type f -print -quit)
     fi
     
@@ -118,9 +170,8 @@ find_boot_image() {
        echo "$boot_image"
        return 0
     fi
-    return 1
+    return 4
 }
-
 
 find_boot_block() {
     local BLOCK DEV DEVICE DEVNAME PARTNAME UEVENT
@@ -174,16 +225,20 @@ main() {
         exit_with_error "This script requires root privileges to execute. Please run as root."
     fi
     
+    if ! supports_color; then GREEN= BLUE= ERR= NC=; fi
+    
     mount /data 2>/dev/null
     print_banner
     
     local boot_block boot_image
     
     # Determine device type (A/B or legacy)
-    local is_ab_device=$(grep_cmdline "androidboot.slot_suffix" || grep_cmdline "androidboot.slot" || getprop "ro.boot.slot_suffix")
-    if [ -n "$is_ab_device" ]; then
+    local PARTITION_INFO=$(grep_cmdline "androidboot.slot_suffix" || grep_cmdline "androidboot.slot" || getprop "ro.boot.slot_suffix")
+    local is_ab_device=${PARTITION_INFO:-?}
+    
+    if [ "$is_ab_device" != "?" ]; then
         echo "- A/B partition style detected!" && sleep 2
-        local slot=${is_ab_device#*=}
+        local slot=${PARTITION_INFO#*=}
         [ "${slot:0:1}" != "_" ] && slot="_$slot"
         [ "$slot" = "_normal" ] && slot=""
         echo "- Current boot slot: $slot" && sleep 1
@@ -191,23 +246,33 @@ main() {
         echo "- Legacy (non-A/B) partition style detected!" && sleep 1
     fi
     
-    echo "- Finding the boot block, please wait..."
-    sleep 10
+    echo "- Checking for boot image, please wait..." && sleep 5
+    boot_image=$(find_boot_image "$1")
+    local ret=$?
+
+    # Handle errors based on the return code
+    case $ret in
+        0) ;; # Success
+        1) exit_with_error "Provided file '$(basename "$1")' doesn't look like a boot image!" 1 ;;
+        2) exit_with_error "Boot image not found in the current directory!" 2 ;;
+        3) exit_with_error "Failed to extract boot image from ZIP file!" 3 ;;
+        4) exit_with_error "Unable to find boot image file!" 4 ;;
+        *) exit_with_error "An unknown error occurred while finding boot image file!" 99 ;;
+    esac
+    
+    echo "- Finding the boot block, please wait..." && sleep 10
     boot_block=$(find_boot_block "boot${slot:-}") || exit_with_error "Boot block not found. Cannot proceed with flashing."
     
-    echo "- Checking for boot image, please wait..."
-    sleep 5
-    boot_image=$(find_boot_image) || exit_with_error "Boot image not found. Cannot proceed with flashing."
-    
-    echo "- Flashing boot image to $boot_block..."
+    echo "- Flashing '$(basename "$boot_image")' to $boot_block..."
     if ! flash_image "$boot_image" "$boot_block"; then
         case $? in
-            1) exit_with_error "Failed to flash boot image. Boot image size is larger than the boot block size.";;
-            2) exit_with_error "Failed to flash boot image. Boot block is read-only.";;
-            3) exit_with_error "Failed to flash boot image. '$boot_block' is not a block or character device.";;
-            *) exit_with_error "Failed to flash boot image due to an unknown error.";;
+            1) exit_with_error "Boot image size exceeds boot block size!" 1 ;;
+            2) exit_with_error "Boot block is read-only!" 2 ;;
+            3) exit_with_error "'$boot_block' is not a valid block or character device!" 3 ;;
+            *) exit_with_error "Unknown error occurred while flashing the boot image!" 99 ;;
         esac
     fi
+    
     echo -e "- ${GREEN}Boot image flashed successfully${NC}"
 }
 

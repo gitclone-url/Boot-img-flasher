@@ -9,14 +9,14 @@
 
 **What is Boot Image Flasher?**
 
-Boot Image Flasher is a shell script developed to simplify the process of flashing boot images on Android devices, supporting both A/B and legacy (non-A/B) devices. Typically, flashing boot images involves using custom recovery or fastboot, which can be complex and time-consuming. This script eliminates the need for those methods, offering a straightforward, efficient, and user-friendly solution.
+Boot Image Flasher is a shell script designed to simplify the process of flashing boot images on Android devices, supporting both A/B and legacy (non-A/B) devices. typically, flashing boot images involves using custom recovery or fastboot, which can be complex and time-consuming. This script eliminates the need for those methods, offering a straightforward, efficient, and user-friendly solution.
 
 ### Key Features
 
 - **Automated and User-Friendly:** Simplifies the boot image flashing process with minimal user intervention.
 - **Broad Device Support:** Compatible with any Android device, including both A/B and legacy (non-A/B) partition styles.
 - **Saves Time and Effort:** Reduces the time and complexity involved in flashing boot images using fastboot or custom recoveries, making it accessible for users with varying levels of technical expertise.
-- **Flexible Usage:** Can be used via Termux or as a Magisk module, providing flexibility based on user preferences.
+- **Flexible Usage:** Can be used via Termux or flashed as a Magisk module, providing flexibility based on user preferences.
 
 ### Prerequisites
 
@@ -28,17 +28,23 @@ Boot Image Flasher is a shell script developed to simplify the process of flashi
 #### Method 1: Via Termux
 
 1. Open [Termux](https://github.com/termux/termux-app) on your Android device.
-2. Navigate to the directory where the boot image file is located using `cd`. For example:
+2. Navigate to the directory where you want to download the script using `cd`. For example:
    ```bash
    cd /storage/emulated/0/Download
    ```
-3. Copy and paste the following command and hit enter to start running the script:
+3. Download the script and necessary tools using the following command:
    ```bash
-   curl -s https://raw.githubusercontent.com/gitclone-url/Boot-img-flasher/Master/boot-img-flasher.sh -o boot-img-flasher.sh && { command -v tput figlet &>/dev/null || pkg install -y figlet ncurses-utils; } && { which sudo &>/dev/null || pkg install -y tsu; }; clear; sudo bash boot-img-flasher.sh
+   curl -s https://raw.githubusercontent.com/gitclone-url/Boot-img-flasher/Master/boot-img-flasher.sh -o boot-img-flasher.sh && { command -v tput figlet &>/dev/null || pkg install -y figlet ncurses-utils; } && { which sudo &>/dev/null || pkg install -y tsu; }
    ```
-   > **Note:** It may take some time to run for the first time because the script will be downloaded first along with the required tools. Please be patient.
+   > **Note:** It may take some time for the script to be downloaded first along with the required tools. Please be patient.
 
-4. Restart your device after the flashing process is complete.
+4. Run the script by executing:
+   ```bash
+   sudo bash boot-img-flasher.sh
+   ```
+   > **Optional Argument:** You can also specify the path to your boot image as an argument. If you don't provide one, the script will search for the boot image in the current directory.
+
+5. Restart your device after the flashing process is complete.
 
 #### Method 2: Magisk
 
@@ -72,7 +78,7 @@ This script is intended for advanced users only. Improper use of this script can
 
 ### Credits
 
-Special thanks to [topjhonwu](https://github.com/topjohnwu) for [Magisk](https://github.com/topjohnwu/Magisk) and its general utility functions.
+Special thanks to [topjohnwu](https://github.com/topjohnwu) for [Magisk](https://github.com/topjohnwu/Magisk) and its general utility functions.
 
 ### License
 
