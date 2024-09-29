@@ -9,21 +9,22 @@
 
 **What is Boot Image Flasher?**
 
-Boot Image Flasher is a shell script designed to simplify the process of flashing boot images on Android devices, supporting both A/B and legacy (non-A/B) devices. typically, flashing boot images involves using custom recovery or fastboot, which can be complex and time-consuming. This script eliminates the need for those methods, offering a straightforward, efficient, and user-friendly solution.
+Boot Image Flasher is a shell script designed to simplify the process of flashing boot and init_boot images on Android devices, supporting both [A/B](https://source.android.com/devices/tech/ota/ab) and [legacy (non-A/B)](https://source.android.com/devices/bootloader/partitions) devices. Typically, flashing these images involves using custom recovery or fastboot, which can be complex and time-consuming. Furthermore many devices lack custom recovery support, and accessing fastboot often requires a PC. Boot Image Flasher addresses this issues by providing a straightforward, efficient, and user-friendly solution for Android enthusiasts and developers that operates directly on the device. The core functionality and image flashing logic of this script is based on Magisk's utility functions. Other well-known rooting applications like [KernelSU](https://github.com/tiann/KernelSU) and [APatch](https://github.com/bmax121/APatch) also use the same approach.
 
 ### Key Features
 
-- **Automated and User-Friendly:** Simplifies the boot image flashing process with minimal user intervention.
-- **Broad Device Support:** Compatible with any Android device, including both A/B and legacy (non-A/B) partition styles.
-- **Saves Time and Effort:** Reduces the time and complexity involved in flashing boot images using fastboot or custom recoveries, making it accessible for users with varying levels of technical expertise.
-- **Flexible Usage:** Can be used via Termux or flashed as a Magisk module, providing flexibility based on user preferences.
+- **Supports dual partition flash:** capable of Automatically detecting and flashing both init_boot and boot images.
+- **Automated and User-Friendly:** Simplifies the image flashing process with minimal user intervention.
+- **Universal Compatibility:** works on any Android device, including both A/B and legacy (non-A/B) partition styles.
+- **Saves Time and Effort:** Reduces the time and complexity involved in flashing boot and init_boot images using fastboot or custom recoveries, making it accessible for users with varying levels of technical expertise.
+- **Flexible Usage:** Can be used via Termux with command-line options, or flash over like a module in magisk, providing flexibility based on use case and preferences.
 
 ### Prerequisites
 
 - An Android device with root access.
-- To use in Termux, `figlet` and `ncurses-utils` need to be installed if not already available.
+- To use in Termux, `figlet`, `file` and `ncurses-utils` need to be installed if not already available.
 
-### Usage
+## Methods of Use
 
 #### Method 1: Via Termux
 
@@ -34,41 +35,81 @@ Boot Image Flasher is a shell script designed to simplify the process of flashin
    ```
 3. Download the script and necessary tools using the following command:
    ```bash
-   curl -s https://raw.githubusercontent.com/gitclone-url/Boot-img-flasher/Master/boot-img-flasher.sh -o boot-img-flasher.sh && { command -v tput figlet &>/dev/null || pkg install -y figlet ncurses-utils; } && { which sudo &>/dev/null || pkg install -y tsu; }
+   curl -s https://raw.githubusercontent.com/gitclone-url/Boot-img-flasher/Master/boot-img-flasher.sh -o boot-img-flasher.sh && \ { command -v tput >/dev/null && command -v figlet >/dev/null && command -v file >/dev/null || pkg install -y figlet file ncurses-utils; } && \ { command -v sudo >/dev/null || pkg install -y tsu; }
    ```
-   > **Note:** It may take some time for the script to be downloaded first along with the required tools. Please be patient.
+   > **Note:** It may take some time for the script to be downloaded, along with the required tools. Please be patient.
 
-4. Run the script by executing:
+
+##### Running the Script:
+
+   **Basic usage:**
+   ```bash
+   boot-img-flasher.sh [-h|--help]
+
+  boot-img-flasher.sh <IMAGE_PATH> --image-type <TYPE>  
+   ```
+   Options:
+- `-h`, `--help` &nbsp;&nbsp;               Display help message with usage information.
+- `-t`, `--image-type` &nbsp;&nbsp;   Manually specify the type of image to flash.
+
+Arguments:
+- `<IMAGE_PATH>` &nbsp;&nbsp;         Path to the boot or init_boot image file.
+- `<TYPE>` &nbsp;&nbsp;                     Must be either `boot` or `init_boot`. 
+----
+
+#### Examples of Use:
+
+1. **Flash an image by providing the image path and it's type:**
+
+   ```bash
+   sudo bash boot-img-flasher.sh /path/to/boot.img --image-type boot
+   ```
+   
+2. **Flash an image from current directory by only specifying type:**
+
+   ```bash
+   sudo bash boot-img-flasher.sh -t init_boot
+   ```
+ 
+   **Or flash by only specifying path (type will be auto-determined):**
+   
+   ```bash
+   sudo bash boot-img-flasher.sh /path/to/init_boot.img
+   ```
+   
+3. **Flash an image from current directory without providing any argument:**
+
    ```bash
    sudo bash boot-img-flasher.sh
    ```
-   > **Optional Argument:** You can also specify the path to your boot image as an argument. If you don't provide one, the script will search for the boot image in the current directory.
-
-5. Restart your device after the flashing process is complete.
+   
+Once flashing process is completed you may restart your device.
 
 #### Method 2: Magisk
 
 1. Download `boot_flasher.zip` from [here](https://github.com/gitclone-url/Boot-img-flasher/raw/Master/boot_flasher.zip).
 2. Extract the archive using an app like [ZArchiver](https://play.google.com/store/apps/details?id=ru.zdevs.zarchiver).
-3. After extracting, copy and paste your `boot.img` inside the created folder.
+3. After extracting, copy and paste your `boot.img` or `init_boot.img` file inside the created folder.
 4. Select all files inside the folder and archive them as a zip.
 5. Install the zip as a Magisk module.
 6. Restart your device.
+
+> **Note:**  It is recommended that the image file is properly named as either `boot` or `init_boot` to avoid errors, as the script may not always auto-detect the image type if not specified.
 
 ### Preview
 
 Below are some screenshots demonstrating the Boot Image Flasher in action:
 
 <div style="display: flex; justify-content: space-around;">
-  <img src="https://github.com/gitclone-url/Boot-img-flasher/assets/98699436/e4f328e9-dc48-4835-a47d-edbad2729d04" width="200" alt="Preview 1" />
-  <img src="https://github.com/gitclone-url/Boot-img-flasher/assets/98699436/cbcad4f5-c35a-4254-9ee3-5d5c8a8ce6ef" width="200" alt="Preview 2" />
+  <img src="https://github.com/user-attachments/assets/2f39d431-4d08-4084-bb81-69149ecb9748" width="200" alt="Preview 1" />
+  <img src="https://github.com/user-attachments/assets/b2356962-9160-4e17-bed9-c47b1088ae9a" width="200" alt="Preview 2" />
 </div>
 
 ### Additional Information
 
-Some GSIs (Generic System Images) based on PHH come with prebuilt root access, meaning the `su` binary is already included in the system. If you are using one of those GSIs and your phone is not actually rooted with Magisk or other root providers, you can just patch the boot image of your phone and then flash the patched boot image using this script, with root permissions granted through the PHH Superuser App. This way, you can easily root using Magisk or other rooting apps just by using your device without needing additional tools, a PC, or any hassles.
+Some GSIs (Generic System Images) based on PHH come with prebuilt root access, meaning the `su` binary is already included in the system. If you are using one of those GSIs and your phone is not actually rooted with Magisk or other root providers, you can just patch the boot/init_boot image of your phone and then flash the patched image using this script, with root permissions granted through the PHH Superuser App. This way, you can easily root using Magisk or other rooting apps just by using your device without needing additional tools, a PC, or any hassles.
 
-> **Note:** For patching the boot image, you can use either [Magisk](https://github.com/topjohnwu/Magisk) or [APatch](https://github.com/bmax121/APatch) app.
+> **Note:** For patching the boot or init_boot image, you can use either [Magisk](https://github.com/topjohnwu/Magisk) or [APatch](https://github.com/bmax121/APatch) app.
 
 For information about GSIs, check the [FAQ](https://github.com/phhusson/treble_experimentations/wiki/Frequently-Asked-Questions-%28FAQ%29) and choose your specific GSI image from [here](https://github.com/phhusson/treble_experimentations/wiki/Generic-System-Image-%28GSI%29-list).
 

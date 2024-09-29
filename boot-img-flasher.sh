@@ -6,24 +6,34 @@
 #
 #══════════════════════════════════════════════════════════════════════════
 # Usage:
-#   boot_img_flasher.sh [<boot_image>]
+#   boot-img-flasher.sh [-h|--help]
+#   boot-img-flasher.sh <image_path> --image-type <type> 
+#
+# Options:
+#   -h, --help         Show help message and exit
+#   -t, --image-type   Specify the image type to be flashed
 #
 # Arguments:
-#   <boot_image>  Optional: Path to the boot image file.
-#                 If not provided, script will search in the current directory
+#   <image_path>       Path to the boot or init_boot image file.
+#   <type>             Accepted values are either boot or init_boot
 #
 #══════════════════════════════════════════════════════════════════════════
 # Features:
-#   * Automated Flashing: Simplifies boot image flashing with minimal user intervention
-#   * Universal Compatibility: Supports A/B and legacy partition styles devices 
-#   * Flexible Usage: Works in Termux or can be flashed as a Magisk module
-#   * User-Friendly: Accessible for users with varying levels of technical expertise.
-#   * Time-Saving: Streamlines the process compared to fastboot or custom recoveries
+# * Supports dual partition flash: capable of automatically detecting 
+#   and flashing both init_boot and boot images.
+# * Automated and User-Friendly: Simplifies the image flashing process with 
+#   minimal user intervention.
+# * Universal Compatibility: Works on any Android device, supporting both A/B
+#   and legacy (non-A/B) partition styles.
+# * Saves Time and Effort: Reduces the complexity of flashing boot 
+#   and init_boot images, eliminating the need for fastboot or custom recoveries.
+# * Flexible Usage: Operates in Termux with command-line options or can be flashed 
+#   over Magisk as a module, priorities different use cases and preferences.
 #
 #══════════════════════════════════════════════════════════════════════════
 # File Structure:
-#   boot_img_flasher.sh   Main script file
-#   *.img                 Boot image to be flashed (if not provided as argument)
+#   boot-img-flasher.sh   Main script file
+#   *.img                 Boot or init_boot image to be flashed (if not provided as an argument)
 #
 #══════════════════════════════════════════════════════════════════════════
 # Author: Abhijeet
@@ -94,6 +104,69 @@ print_banner() {
     fi
 }
 
+
+print_usage() {
+    local script_name=$(basename "$0")
+    printf "Usage:\n"
+    printf "  %s [-h|--help]\n" "$script_name"
+    printf "  %s <image_path> -t|--image-type <type>\n\n" "$script_name"
+    printf "Options:\n"
+    printf "  %-20s %s\n" "-h, --help" "Show this help message and exit"
+    printf "  %-20s %s\n" "-t, --image-type" "Specify the image type to be flashed"
+    printf "\n"
+    printf "Arguments:\n"
+    printf "  %-20s %s\n" "<image_path>" "Path to the boot or init_boot image file"
+    printf "  %-20s %s\n" "<type>" "Must be either 'boot' or 'init_boot'"
+    printf "\n"
+    printf "For more information, visit: %s\n" "https://github.com/gitclone-url/boot-img-flasher"
+}
+
+parse_arguments() {
+    local image image_type
+
+    while (( $# )); do
+        case "$1" in
+            -h|--help)
+                [[ $# -ne 1 ]] && exit_with_error "-h|--help must be the only argument"
+                print_usage
+                exit 0
+                ;;
+            -t|--image-type)
+                [[ -n "$image_type" ]] && exit_with_error "Image type already specified. Use -t or --image-type only once."
+                [[ -z "$2" || "$2" == -* ]] && exit_with_error "Expected image type value after -t|--image-type"
+                image_type="$2"
+                shift 2
+                ;;
+            boot|init_boot)
+                [[ -n "$image_type" ]] && exit_with_error "Please specify only one image type!"
+                image_type="$1"
+                shift
+                ;;
+            -*)
+                exit_with_error "Unknown option: $1"
+                ;;
+            *)
+                [[ -n "$image" ]] && exit_with_error "Unexpected argument: $1"
+                [[ -n "$image_type" ]] && exit_with_error "Image path must come before image type argument!"
+                image="$1"
+                shift
+                ;;
+        esac
+    done
+
+    # Only validate args if provided 
+    [[ -n "$image" || -n "$image_type" ]] && validate_arguments
+
+    export IMAGE="$image" IMAGE_TYPE="$image_type"
+}
+
+validate_arguments() {
+    [[ "$image_type" != "boot" && "$image_type" != "init_boot" ]] && exit_with_error "Invalid image type. Must be 'boot' or 'init_boot'"
+    
+    [[ -n "$image" && ! -f "$image" ]] && exit_with_error "File does not exist: $image"
+    [[ -n "$image" && "${image,,}" != *.img ]] && exit_with_error "Unsupported file type '$(basename "$image")'. This file cannot be flashed!"
+}
+
 require_new_magisk() {
     ui_print "*******************************"
     ui_print " Please install Magisk v20.4+! "
@@ -144,36 +217,71 @@ supports_color() {
     [ -t 1 ] && command -v tput > /dev/null && tput colors > /dev/null
 }
 
-find_boot_image() {
-    local boot_image
+
+determine_image_type() {
+    local image="$1"
+    local file_output
     
-    if [ "$DEBUG" != "true" ]; then
-        if [ -n "$1" ] && [ -f "$1" ]; then
-            [[ "$1" == *.img ]] && boot_image=$1 || return 1
-        else
-            boot_image=$(find "$PWD" -maxdepth 1 -name '*.img' -type f -print -quit) || return 2
-        fi
-    else
-        [ -f /data/adb/magisk/util_functions.sh ] || require_new_magisk
-        . /data/adb/magisk/util_functions.sh
-        [ $MAGISK_VER_CODE -lt 20400 ] && require_new_magisk
-        rm -rf $TMPDIR
-        mkdir -p $TMPDIR
-        chcon u:object_r:system_file:s0 $TMPDIR
-        cd $TMPDIR
-        # Extract any .img file from ZIP file
-        unzip -o "$ZIPFILE" '*.img' -d $TMPDIR >&2 || return 3
-        boot_image=$(find "$TMPDIR" -maxdepth 1 -name '*.img' -type f -print -quit)
+    if command -v file > /dev/null; then
+        file_output=$(file -b "$image")
+        case "$file_output" in
+            *"Android bootimg"*)
+                echo "boot"
+                return 0
+                ;;
+            *"Android init boot"*)
+                echo "init_boot"
+                return 0
+                ;;
+        esac
     fi
+
+    local file_size=$(stat -c %s "$image")
     
-    if [ -n "$boot_image" ]; then
-       echo "$boot_image"
-       return 0
-    fi
-    return 4
+    # Typical init_boot images are smaller than boot images
+    # These sizes are approximations and may need adjustment
+    [ "$file_size" -lt 10485760 ] && echo "init_boot" || echo "boot"
 }
 
-find_boot_block() {
+processImageFile() {
+    local image image_type
+
+    # Assign image and image_type if provided
+    [[ -n "$IMAGE" || -n "$IMAGE_TYPE" ]] && { image="$IMAGE"; image_type="$IMAGE_TYPE"; }
+    
+    magisk_env() {
+        [[ -f /data/adb/magisk/util_functions.sh ]] || require_new_magisk
+        . /data/adb/magisk/util_functions.sh
+        (( MAGISK_VER_CODE < 20400 )) && require_new_magisk
+        rm -rf "$TMPDIR"
+        mkdir -p "$TMPDIR"
+        chcon u:object_r:system_file:s0 "$TMPDIR"
+        cd "$TMPDIR"
+        unzip -o "$ZIPFILE" '*.img' -d "$TMPDIR" >&2 || return 1
+        image=$(find "$TMPDIR" -maxdepth 1 -name '*.img' -type f -print -quit)
+    }
+    
+    termux_env() {
+        image=$(find "$PWD" -maxdepth 1 -name '*.img' -type f -print -quit) || return 2
+    }
+    
+    # Handle environments
+    [[ -n "${DEBUG}" && "${DEBUG}" == true ]] && magisk_env || { [[ -z "${image}" ]] && termux_env; }
+    
+    # Not found!
+    [[ -z "$image" ]] && return 4
+    
+    # Determine image type if not already set
+    image_type=${image_type:-$(basename "$image" | sed 's/\.img$//')}
+    [[ "$image_type" != "init_boot" && "$image_type" != "boot" ]] && image_type=$(determine_image_type "$image")
+    [[ -z "$image_type" ]] && return 3
+    
+    echo "$image" "$image_type"
+    return 0
+}
+
+
+find_partition_block() {
     local BLOCK DEV DEVICE DEVNAME PARTNAME UEVENT
     for BLOCK in "$@"; do
         DEVICE=$(find /dev/block \( -type b -o -type c -o -type l \) -iname "$BLOCK" 2>/dev/null | head -n 1)
@@ -219,6 +327,7 @@ flash_image() {
     return 0
 }
 
+#================================Main Entry Point =====================================#
 main() {
     # Check if running as root
     if [ "$(id -u)" -ne 0 ]; then
@@ -227,10 +336,13 @@ main() {
     
     if ! supports_color; then GREEN= BLUE= ERR= NC=; fi
     
+    # Only parse arguments in Terminal
+    [[ -n "${DEBUG}" ]] || parse_arguments "$@"
+    
     mount /data 2>/dev/null
     print_banner
     
-    local boot_block boot_image
+    local block_device image image_type
     
     # Determine device type (A/B or legacy)
     local PARTITION_INFO=$(grep_cmdline "androidboot.slot_suffix" || grep_cmdline "androidboot.slot" || getprop "ro.boot.slot_suffix")
@@ -246,34 +358,34 @@ main() {
         echo "- Legacy (non-A/B) partition style detected!" && sleep 1
     fi
     
-    echo "- Checking for boot image, please wait..." && sleep 5
-    boot_image=$(find_boot_image "$1")
+    echo "- Checking image file, please wait..." && sleep 5
+    read image image_type < <(processImageFile)
     local ret=$?
-
+    
     # Handle errors based on the return code
     case $ret in
-        0) ;; # Success
-        1) exit_with_error "Provided file '$(basename "$1")' doesn't look like a boot image!" 1 ;;
-        2) exit_with_error "Boot image not found in the current directory!" 2 ;;
-        3) exit_with_error "Failed to extract boot image from ZIP file!" 3 ;;
-        4) exit_with_error "Unable to find boot image file!" 4 ;;
-        *) exit_with_error "An unknown error occurred while finding boot image file!" 99 ;;
+        0) echo "- Provided image file: '$(basename "$image")'";;
+        1) exit_with_error "image file not found in the current directory!" 1 ;;
+        2) exit_with_error "Failed to extract image from ZIP file!" 2 ;;
+        3) exit_with_error "Unable to determine image type!" 3 ;;
+        4) exit_with_error "Unable to find image file!" 4 ;;
+        *) exit_with_error "An unknown error occurred while finding image file!" 99 ;;
     esac
     
-    echo "- Finding the boot block, please wait..." && sleep 10
-    boot_block=$(find_boot_block "boot${slot:-}") || exit_with_error "Boot block not found. Cannot proceed with flashing."
-    
-    echo "- Flashing '$(basename "$boot_image")' to $boot_block..."
-    if ! flash_image "$boot_image" "$boot_block"; then
+    echo "- Finding the ${image_type} block, please wait..." && sleep 10
+    block_device=$(find_partition_block "${image_type}${slot:-}") || exit_with_error "${image_type} block not found. Cannot proceed with flashing."
+      
+    echo "- Flashing image to $block_device..."
+    if ! flash_image "$image" "$block_device"; then
         case $? in
-            1) exit_with_error "Boot image size exceeds boot block size!" 1 ;;
-            2) exit_with_error "Boot block is read-only!" 2 ;;
-            3) exit_with_error "'$boot_block' is not a valid block or character device!" 3 ;;
-            *) exit_with_error "Unknown error occurred while flashing the boot image!" 99 ;;
+            1) exit_with_error "Failed to flash, image size exceeds block device size!" 1 ;;
+            2) exit_with_error "Failed to flash, partition block is read-only!" 2 ;;
+            3) exit_with_error "Failed to flash, located partition block: '${block_device}' is not a valid  block or character device." 3 ;;
+            *) exit_with_error "Unknown error occurred while flashing the image!" 99 ;;
         esac
     fi
     
-    echo -e "- ${GREEN}Boot image flashed successfully${NC}"
+    echo -e "- ${GREEN}${image_type^} image flashed successfully${NC}"
 }
 
 main "$@"
