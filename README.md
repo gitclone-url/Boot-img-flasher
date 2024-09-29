@@ -46,15 +46,17 @@ Boot Image Flasher is a shell script designed to simplify the process of flashin
    ```bash
    boot-img-flasher.sh [-h|--help]
 
-  boot-img-flasher.sh <IMAGE_PATH> --image-type <TYPE>  
+  boot-img-flasher.sh <IMAGE_PATH> --image-type <TYPE>
    ```
+   
    Options:
-- `-h`, `--help` &nbsp;&nbsp;               Display help message with usage information.
-- `-t`, `--image-type` &nbsp;&nbsp;   Manually specify the type of image to flash.
+- `-h`, `--help`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Display help message with usage information.
+- `-t`, `--image-type`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Manually specify the type of image to flash.
 
-Arguments:
-- `<IMAGE_PATH>` &nbsp;&nbsp;         Path to the boot or init_boot image file.
-- `<TYPE>` &nbsp;&nbsp;                     Must be either `boot` or `init_boot`. 
+Arguments: 
+-  `<IMAGE_PATH>`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Path to the boot or init_boot image file.
+- `<TYPE>`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Must be either `boot` or `init_boot`.
+
 ----
 
 #### Examples of Use:
@@ -94,7 +96,7 @@ Once flashing process is completed you may restart your device.
 5. Install the zip as a Magisk module.
 6. Restart your device.
 
-> **Note:**  It is recommended that the image file is properly named as either `boot` or `init_boot` to avoid errors, as the script may not always auto-detect the image type if not specified.
+> **Note:**  It is recommended to properly name the image file as with either `boot` or `init_boot` to avoid errors, as the script may not always auto-detect the image type if not specified.
 
 ### Preview
 
@@ -123,7 +125,7 @@ Special thanks to [topjohnwu](https://github.com/topjohnwu) for [Magisk](https:/
 
 ### License
 
-Boot Image Flasher is distributed under the terms of the [GNU General Public License v2.0](LICENSE).
+Boot Image Flasher is distributed under the terms of the [MIT License](LICENSE).
 
 ### Contributing
 
