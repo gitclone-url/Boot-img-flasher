@@ -61,7 +61,7 @@ print_banner() {
     
     local author='Author: Abhijeet'
     local git_source='@gitclone-url/Boot-img-flasher'
-    local description='A Shell script to flash boot image on any Android devices'
+    local description='A tool for Flashing boot/init_boot images on any android devices'
     
     center_text() {
         local text="$1"
@@ -71,8 +71,7 @@ print_banner() {
         printf "%*s%b%*s\n" $padding_width "" "$text" $padding_width "" && echo
      }
 
-    # Check if 'figlet' is available. If it is so, assume that script likely running in Termux
-    # or a similar environment. And in this case use 'figlet' to display our ASCII art banner.
+    # Check if 'figlet' is available, and use it to display our ASCII art banner.
     # With the addition of '-c' and '-t' option, to ensure proper alignment.
     if command -v figlet > /dev/null; then
         figlet -ct "$banner_text"
@@ -132,13 +131,13 @@ parse_arguments() {
                 exit 0
                 ;;
             -t|--image-type)
-                [[ -n "$image_type" ]] && exit_with_error "Image type already specified. Use -t or --image-type only once."
+                [[ -n "$image_type" ]] && exit_with_error "Image type already specified. Use -t or --image-type only once"
                 [[ -z "$2" || "$2" == -* ]] && exit_with_error "Expected image type value after -t|--image-type"
                 image_type="$2"
                 shift 2
                 ;;
             boot|init_boot)
-                [[ -n "$image_type" ]] && exit_with_error "Please specify only one image type!"
+                [[ -n "$image_type" ]] && exit_with_error "Please specify only one image type"
                 image_type="$1"
                 shift
                 ;;
@@ -147,7 +146,7 @@ parse_arguments() {
                 ;;
             *)
                 [[ -n "$image" ]] && exit_with_error "Unexpected argument: $1"
-                [[ -n "$image_type" ]] && exit_with_error "Image path must come before image type argument!"
+                [[ -n "$image_type" ]] && exit_with_error "Image path must come before image type argument"
                 image="$1"
                 shift
                 ;;
@@ -164,7 +163,7 @@ validate_arguments() {
     [[ "$image_type" != "boot" && "$image_type" != "init_boot" ]] && exit_with_error "Invalid image type. Must be 'boot' or 'init_boot'"
     
     [[ -n "$image" && ! -f "$image" ]] && exit_with_error "File does not exist: $image"
-    [[ -n "$image" && "${image,,}" != *.img ]] && exit_with_error "Unsupported file type '$(basename "$image")'. This file cannot be flashed!"
+    [[ -n "$image" && "${image,,}" != *.img ]] && exit_with_error "Unsupported file type '$(basename "$image")'. This file cannot be flashed"
 }
 
 require_new_magisk() {
@@ -208,10 +207,9 @@ exit_with_error() {
     local message="$1"
     local status="${2:-1}"  
     
-    echo -e "\n${ERR}Error: ${NC}$message"
+    echo -e "\n${ERR}Error: ${NC}$message!" >&2
     exit "$status"
 }
-
 
 supports_color() {
     [ -t 1 ] && command -v tput > /dev/null && tput colors > /dev/null
@@ -257,8 +255,8 @@ processImageFile() {
         mkdir -p "$TMPDIR"
         chcon u:object_r:system_file:s0 "$TMPDIR"
         cd "$TMPDIR"
-        unzip -o "$ZIPFILE" '*.img' -d "$TMPDIR" >&2 || return 1
-        image=$(find "$TMPDIR" -maxdepth 1 -name '*.img' -type f -print -quit)
+        unzip -o "$ZIPFILE" '*.img' -d "$TMPDIR" >&2
+        image=$(find "$TMPDIR" -maxdepth 1 -name '*.img' -type f -print -quit) || return 1
     }
     
     termux_env() {
@@ -331,7 +329,7 @@ flash_image() {
 main() {
     # Check if running as root
     if [ "$(id -u)" -ne 0 ]; then
-        exit_with_error "This script requires root privileges to execute. Please run as root."
+        exit_with_error "This script requires root privileges to execute. Please run as root"
     fi
     
     if ! supports_color; then GREEN= BLUE= ERR= NC=; fi
@@ -359,29 +357,30 @@ main() {
     fi
     
     echo "- Checking image file, please wait..." && sleep 5
-    read image image_type < <(processImageFile)
-    local ret=$?
+    output=$(processImageFile)
     
     # Handle errors based on the return code
-    case $ret in
-        0) echo "- Provided image file: '$(basename "$image")'";;
-        1) exit_with_error "image file not found in the current directory!" 1 ;;
-        2) exit_with_error "Failed to extract image from ZIP file!" 2 ;;
-        3) exit_with_error "Unable to determine image type!" 3 ;;
-        4) exit_with_error "Unable to find image file!" 4 ;;
-        *) exit_with_error "An unknown error occurred while finding image file!" 99 ;;
-    esac
+     case $? in
+         0) read image image_type <<< "$output"
+            echo "- Provided image file: '$(basename "$image")'"  ;;
+          
+         1) exit_with_error "Image file not found inside zip contents" 1 ;;
+         2) exit_with_error "Image file not found in the current directory" 2 ;;
+         3) exit_with_error "Unable to determine image type" 3 ;;
+         4) exit_with_error "Unable to find image file" 4 ;;
+         *) exit_with_error "An unknown error occurred while finding image file" 99 ;;
+     esac
     
     echo "- Finding the ${image_type} block, please wait..." && sleep 10
-    block_device=$(find_partition_block "${image_type}${slot:-}") || exit_with_error "${image_type} block not found. Cannot proceed with flashing."
+    block_device=$(find_partition_block "${image_type}${slot:-}") || exit_with_error "${image_type} block not found. Cannot proceed with flashing"
       
     echo "- Flashing image to $block_device..."
     if ! flash_image "$image" "$block_device"; then
         case $? in
-            1) exit_with_error "Failed to flash, image size exceeds block device size!" 1 ;;
-            2) exit_with_error "Failed to flash, partition block is read-only!" 2 ;;
-            3) exit_with_error "Failed to flash, located partition block: '${block_device}' is not a valid  block or character device." 3 ;;
-            *) exit_with_error "Unknown error occurred while flashing the image!" 99 ;;
+            1) exit_with_error "Failed to flash, image size exceeds block device size" 1 ;;
+            2) exit_with_error "Failed to flash, partition block is read-only" 2 ;;
+            3) exit_with_error "Failed to flash, located partition block: '${block_device}' is not a valid  block or character device" 3 ;;
+            *) exit_with_error "Unknown error occurred while flashing the image" 99 ;;
         esac
     fi
     

@@ -35,7 +35,7 @@ Boot Image Flasher is a shell script designed to simplify the process of flashin
    ```
 3. Download the script and necessary tools using the following command:
    ```bash
-   curl -s https://raw.githubusercontent.com/gitclone-url/Boot-img-flasher/Master/boot-img-flasher.sh -o boot-img-flasher.sh && \ { command -v tput >/dev/null && command -v figlet >/dev/null && command -v file >/dev/null || pkg install -y figlet file ncurses-utils; } && \ { command -v sudo >/dev/null || pkg install -y tsu; }
+   curl -s https://raw.githubusercontent.com/gitclone-url/Boot-img-flasher/master/boot-img-flasher.sh -o boot-img-flasher.sh && { command -v tput >/dev/null && command -v figlet >/dev/null && command -v file >/dev/null || pkg install -y figlet file ncurses-utils; } && { command -v sudo >/dev/null || pkg install -y tsu; }
    ```
    > **Note:** It may take some time for the script to be downloaded, along with the required tools. Please be patient.
 
@@ -50,12 +50,12 @@ Boot Image Flasher is a shell script designed to simplify the process of flashin
    ```
    
    Options:
-- `-h`, `--help`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Display help message with usage information.
-- `-t`, `--image-type`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Manually specify the type of image to flash.
+- `-h`, `--help`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Display help message with usage information.
+- `-t`, `--image-type`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Manually specify the type of image to flash.
 
 Arguments: 
--  `<IMAGE_PATH>`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Path to the boot or init_boot image file.
-- `<TYPE>`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Must be either `boot` or `init_boot`.
+-  `<IMAGE_PATH>`&nbsp;&nbsp;&nbsp;&nbsp;Path to the boot or init_boot image file.
+- `<TYPE>`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Must be either `boot` or `init_boot`.
 
 ----
 
