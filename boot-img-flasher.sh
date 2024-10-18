@@ -126,28 +126,28 @@ parse_arguments() {
     while (( $# )); do
         case "$1" in
             -h|--help)
-                [[ $# -ne 1 ]] && exit_with_error "-h|--help must be the only argument"
+                [[ $# -ne 1 ]] && exit_with_error "-h|--help must be the only argument!"
                 print_usage
                 exit 0
                 ;;
             -t|--image-type)
-                [[ -n "$image_type" ]] && exit_with_error "Image type already specified. Use -t or --image-type only once"
-                [[ -z "$2" || "$2" == -* ]] && exit_with_error "Expected image type value after -t|--image-type"
+                [[ -n "$image_type" ]] && exit_with_error "Image type already specified. Use -t or --image-type only once!"
+                [[ -z "$2" || "$2" == -* ]] && exit_with_error "Expected image type value after -t|--image-type!"
                 image_type="$2"
                 shift 2
                 ;;
             boot|init_boot)
-                [[ -n "$image_type" ]] && exit_with_error "Please specify only one image type"
-                image_type="$1"
+                [[ -n "$image_type" ]] && exit_with_error "Please specify only one image type!"
+                [[ "$1" != *.img ]] && image_type="$1"
                 shift
                 ;;
             -*)
-                exit_with_error "Unknown option: $1"
+                exit_with_error "Unknown option: $1!"
                 ;;
             *)
-                [[ -n "$image" ]] && exit_with_error "Unexpected argument: $1"
-                [[ -n "$image_type" ]] && exit_with_error "Image path must come before image type argument"
-                image="$1"
+                [[ -n "$image" ]] && exit_with_error "Unexpected argument: $1!"
+                [[ -n "$image_type" ]] && exit_with_error "Image path must come before image type argument!"
+                [[ "$1" == *.img ]] && image="$1"
                 shift
                 ;;
         esac
@@ -160,11 +160,16 @@ parse_arguments() {
 }
 
 validate_arguments() {
-    [[ "$image_type" != "boot" && "$image_type" != "init_boot" ]] && exit_with_error "Invalid image type. Must be 'boot' or 'init_boot'"
+    [[ -n "$image" ]] && {
+        [[ ! -f "$image" ]] && exit_with_error "File does not exist: $image!"
+        [[ "${image,,}" != *.img ]] && exit_with_error "Unsupported file type '$(basename "$image")'. This file cannot be flashed!"
+    }
     
-    [[ -n "$image" && ! -f "$image" ]] && exit_with_error "File does not exist: $image"
-    [[ -n "$image" && "${image,,}" != *.img ]] && exit_with_error "Unsupported file type '$(basename "$image")'. This file cannot be flashed"
+    [[ -n "$image_type" ]] && {
+        [[ "$image_type" != "boot" && "$image_type" != "init_boot" ]] && exit_with_error "Invalid image type. Must be 'boot' or 'init_boot'!"
+    }
 }
+
 
 require_new_magisk() {
     ui_print "*******************************"
@@ -242,7 +247,7 @@ determine_image_type() {
 }
 
 processImageFile() {
-    local image image_type
+    local image image_type ret=0
 
     # Assign image and image_type if provided
     [[ -n "$IMAGE" || -n "$IMAGE_TYPE" ]] && { image="$IMAGE"; image_type="$IMAGE_TYPE"; }
@@ -256,18 +261,24 @@ processImageFile() {
         chcon u:object_r:system_file:s0 "$TMPDIR"
         cd "$TMPDIR"
         unzip -o "$ZIPFILE" '*.img' -d "$TMPDIR" >&2
-        image=$(find "$TMPDIR" -maxdepth 1 -name '*.img' -type f -print -quit) || return 1
+        image=$(find "$TMPDIR" -maxdepth 1 -name '*.img' -type f -print -quit)
     }
     
     termux_env() {
-        image=$(find "$PWD" -maxdepth 1 -name '*.img' -type f -print -quit) || return 2
+        image=$(find "$PWD" -maxdepth 1 -name '*.img' -type f -print -quit)
     }
     
     # Handle environments
-    [[ -n "${DEBUG}" && "${DEBUG}" == true ]] && magisk_env || { [[ -z "${image}" ]] && termux_env; }
-    
-    # Not found!
-    [[ -z "$image" ]] && return 4
+    if [[ -n "${DEBUG}" && "${DEBUG}" == true ]]; then
+        magisk_env || [[ -z "$image" ]] && ret=1
+    fi
+
+    if [[ -z "${image}" ]]; then
+        termux_env || [[ -z "$image" ]] && ret=2
+    fi
+
+    # If image was Not found!
+    [[ -z "$image" ]] && return ${ret:-4} || :
     
     # Determine image type if not already set
     image_type=${image_type:-$(basename "$image" | sed 's/\.img$//')}
@@ -277,6 +288,7 @@ processImageFile() {
     echo "$image" "$image_type"
     return 0
 }
+
 
 
 find_partition_block() {
@@ -340,7 +352,7 @@ main() {
     mount /data 2>/dev/null
     print_banner
     
-    local block_device image image_type
+    local block_device image image_type ret
     
     # Determine device type (A/B or legacy)
     local PARTITION_INFO=$(grep_cmdline "androidboot.slot_suffix" || grep_cmdline "androidboot.slot" || getprop "ro.boot.slot_suffix")
@@ -358,28 +370,33 @@ main() {
     
     echo "- Checking image file, please wait..." && sleep 5
     output=$(processImageFile)
+    ret=$?
     
-    # Handle errors based on the return code
-     case $? in
-         0) read image image_type <<< "$output"
-            echo "- Provided image file: '$(basename "$image")'"  ;;
-          
-         1) exit_with_error "Image file not found inside zip contents" 1 ;;
-         2) exit_with_error "Image file not found in the current directory" 2 ;;
-         3) exit_with_error "Unable to determine image type" 3 ;;
-         4) exit_with_error "Unable to find image file" 4 ;;
-         *) exit_with_error "An unknown error occurred while finding image file" 99 ;;
-     esac
+    case $ret in
+        0)
+            set -- $output
+            if [ $# -eq 2 ]; then
+                image="$1"
+                image_type="$2"
+                echo "- Provided image file: '$(basename "$image")'"
+            fi
+            ;;
+        1) exit_with_error "Image file not found inside zip contents" 1 ;;
+        2) exit_with_error "Image file not found in the current directory" 2 ;;
+        3) exit_with_error "Unable to determine image type" 3 ;;
+        4) exit_with_error "Unable to find image file" 4 ;;
+        *) exit_with_error "An unknown error occurred while finding image file" 99 ;;
+    esac
     
     echo "- Finding the ${image_type} block, please wait..." && sleep 10
     block_device=$(find_partition_block "${image_type}${slot:-}") || exit_with_error "${image_type} block not found. Cannot proceed with flashing"
-      
+    
     echo "- Flashing image to $block_device..."
     if ! flash_image "$image" "$block_device"; then
         case $? in
             1) exit_with_error "Failed to flash, image size exceeds block device size" 1 ;;
             2) exit_with_error "Failed to flash, partition block is read-only" 2 ;;
-            3) exit_with_error "Failed to flash, located partition block: '${block_device}' is not a valid  block or character device" 3 ;;
+            3) exit_with_error "Failed to flash, located partition block: '${block_device}' is not a valid block or character device" 3 ;;
             *) exit_with_error "Unknown error occurred while flashing the image" 99 ;;
         esac
     fi
