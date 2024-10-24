@@ -103,8 +103,8 @@ Once flashing process is completed you may restart your device.
 Below are some screenshots demonstrating the Boot Image Flasher in action:
 
 <div style="display: flex; justify-content: space-around;">
-  <img src="https://github.com/user-attachments/assets/2f39d431-4d08-4084-bb81-69149ecb9748" width="200" alt="Preview 1" />
-  <img src="https://github.com/user-attachments/assets/b2356962-9160-4e17-bed9-c47b1088ae9a" width="200" alt="Preview 2" />
+  <img src="https://github.com/user-attachments/assets/18973f9e-3666-4c7c-8d5b-aa143a18eb35" width="200" alt="Preview 1" />
+  <img src="https://github.com/user-attachments/assets/96bcca63-1d98-42bc-83f8-9f46c85ea653" width="200" alt="Preview 2" />
 </div>
 
 ### Additional Information
